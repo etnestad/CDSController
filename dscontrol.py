@@ -9,12 +9,10 @@ from pywinauto import Application
 from datetime import date,timedelta
 from win32com.shell import shell, shellcon
 
-
-
-ds_name = "Vinterflyging"
-ds_port = "56278"
-ds_password = "speider"
-ds_admin_password = "sjefen"
+ds_name = ""
+ds_port = ""
+ds_password = ""
+ds_admin_password = ""
 
 ds_base_path = "c:\\condor2\\"
 ds_app_path = os.path.join(ds_base_path,"condordedicated.exe")
