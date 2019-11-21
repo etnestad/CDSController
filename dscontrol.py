@@ -15,120 +15,192 @@ ds_password = ""
 ds_admin_password = ""
 
 ds_base_path = "c:\\condor2\\"
-ds_app_path = os.path.join(ds_base_path,"condordedicated.exe")
-ds_config_path = os.path.join(ds_base_path,"settings\\host.ini")
-
-user_path = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
-sfl_path = os.path.join(user_path,"flightplan.sfl")
-print(sfl_path)
-fpl_files_folder = "Z:\\condor\\"
+fpl_files_folder = "z:\\condor\\"
 
 flight_plan_start_time = [19,30]
+join_time_limit = "45" # Minutter
 
 # Task parameters
 task_start_time = [14,00]   
 task_start_date = [2019,6,21]
 task_start_delay = 5
 
-ds_config = configparser.ConfigParser()
-ds_config_file = open(ds_config_path,"w")
+def open_server(ds_base_path):
+	ds_app_path = os.path.join(ds_base_path,"condordedicated.exe")
+	ds_app = Application().start(ds_app_path)
+	return ds_app
 
-ds_config.add_section("General")
-ds_config.set("General","ServerName",ds_name)
-ds_config.set("General","Port",ds_port)
-ds_config.set("General","Password",ds_password)
-ds_config.set("General","AdminPassword",ds_admin_password)
-ds_config.set("General","CompetitionName","")
-ds_config.set("General","CompetitionPassword","")
-ds_config.set("General","MaxPlayers","30")
-ds_config.set("General","MinPlayers","1")
-ds_config.set("General","MaxPing","40")
-ds_config.set("General","JoinTimeLimit","45")
-ds_config.set("General","AdvertiseOnWeb","1")
-ds_config.set("General","AdvertiseManualIP","")
-ds_config.set("General","AutomaticPortForwarding","0")
-ds_config.set("General","AllowClientsToSaveFlightPlan","1")
-ds_config.set("General","MaxTowplanes","4")
-ds_config.add_section("DedicatedServer")
-ds_config.set("DedicatedServer","LastSFL",sfl_path)
-ds_config.write(ds_config_file)
-ds_config_file.close()
+def set_ds_config(ds_base_path):	
+	ds_config_path = os.path.join(ds_base_path,"settings\\host.ini")
+	ds_config = configparser.ConfigParser()
+	ds_config_file = open(ds_config_path,"w")
+	ds_config.add_section("General")
+	ds_config.set("General","ServerName",ds_name)
+	ds_config.set("General","Port",ds_port)
+	ds_config.set("General","Password",ds_password)
+	ds_config.set("General","AdminPassword",ds_admin_password)
+	ds_config.set("General","CompetitionName","")
+	ds_config.set("General","CompetitionPassword","")
+	ds_config.set("General","MaxPlayers","30")
+	ds_config.set("General","MinPlayers","1")
+	ds_config.set("General","MaxPing","40")
+	ds_config.set("General","JoinTimeLimit",join_time_limit)
+	ds_config.set("General","AdvertiseOnWeb","1")
+	ds_config.set("General","AdvertiseManualIP","")
+	ds_config.set("General","AutomaticPortForwarding","0")
+	ds_config.set("General","AllowClientsToSaveFlightPlan","1")
+	ds_config.set("General","MaxTowplanes","4")
+	ds_config.add_section("DedicatedServer")
+	ds_config.set("DedicatedServer","LastSFL",sfl_path)
+	ds_config.write(ds_config_file)
+	ds_config_file.close()
 
-# Select random flightplan from z:\condor\
-fpl_files = [x for x in os.listdir(fpl_files_folder) if x.endswith(".fpl")]
-fpl_file = random.choice(fpl_files)
+def select_random_flightplan(fpl_files_folder):
+	# Select random flightplan from fpl_files_folder
+	fpl_files = [x for x in os.listdir(fpl_files_folder) if x.endswith(".fpl")]
+	fpl_file = random.choice(fpl_files)
+	fpl_file_path = os.path.join(fpl_files_folder,fpl_file)
+		
+	# Write flightplan to SFL
+	sfl_file = open(sfl_path,"w")
+	sfl_file.write(fpl_file_path + "\r\n")
+	sfl_file.close()
+	print("Flightplan: " + fpl_file_path)
+	return fpl_file_path
+	
+def set_flightplan_params(fpl_file_path):
+	# Force Some parameters in flightplan
+	flight_plan = configparser.ConfigParser()
+	flight_plan.read(fpl_file_path)
+	flight_plan['GameOptions']['StartTime'] = str(task_start_time[0]+task_start_time[1]/60.0)
+	flight_plan['GameOptions']['RaceStartDelay'] = str(task_start_delay/60)
+	flight_plan['GameOptions']['TaskDate'] = str((date(task_start_date[0],task_start_date[1],task_start_date[2])-date(1900,1,1)+timedelta(2)).days)
+	tmp_file = open(fpl_file_path,"w")
+	flight_plan.write(tmp_file)
+	tmp_file.close()
 
-sfl_file = open(sfl_path,"w")
-sfl_file.write(fpl_files_folder + fpl_file + "\r\n")
-sfl_file.close()
-print("Selected fligtplan: " + fpl_file)
+def start_time(flight_plan_start_time):
+	start_tid = list(time.localtime())
+	start_tid[3] = flight_plan_start_time[0]
+	start_tid[4] = flight_plan_start_time[1]
+	start_tid[5] = 0  # Sekunder
+	start_tid_epoch = time.mktime(tuple(start_tid))
+	if start_tid_epoch > time.time():
+		print("Sleep for start time: " + str(flight_plan_start_time[0]) + ":" + str(flight_plan_start_time[1]))
+		time.sleep(start_tid_epoch - time.time())
+	else:
+		print("Sleeping only 10 seconds!")
+		time.sleep(10)
 
-# Force Some parameters in flightplan
-flight_plan = configparser.ConfigParser()
-flight_plan.read(fpl_files_folder + fpl_file)
-flight_plan['GameOptions']['StartTime'] = str(task_start_time[0]+task_start_time[1]/60.0)
-flight_plan['GameOptions']['RaceStartDelay'] = str(task_start_delay/60)
-flight_plan['GameOptions']['TaskDate'] = str((date(task_start_date[0],task_start_date[1],task_start_date[2])-date(1900,1,1)+timedelta(2)).days)
-tmp_file = open(fpl_files_folder + fpl_file,"w")
-flight_plan.write(tmp_file)
-tmp_file.close()
+def start_server(app):
+	if not app.TDedicatedForm.has_focus():
+		app.TDedicatedForm.set_focus()
+	app.TDedicatedForm.START.wait("exists enabled visible ready",5,0.5)
+	ds_app.TDedicatedForm.START.click()
 
-# Start server application 
-ds_app = Application().start(ds_app_path)
+def start_flight(app):
+	if not app.TDedicatedForm.has_focus():
+		app.TDedicatedForm.set_focus()
+	app.TDedicatedForm.edit.wait("exists enabled visible ready",5,0.5)
+	app.TDedicatedForm.edit.send_keystrokes(".start")
+	app.TDedicatedForm.edit.send_keystrokes("{ENTER}")
+	# Responsen til denne er "Flight started." i Server log
 
-# Sleep until start time
-start_tid = list(time.localtime())
-start_tid[3] = flight_plan_start_time[0]
-start_tid[4] = flight_plan_start_time[1]
-start_tid[5] = 0  # Sekunder
-start_tid_epoch = time.mktime(tuple(start_tid))
-if start_tid_epoch > time.time():
-    print("Sleep for start time: " + str(flight_plan_start_time[0]) + ":" + str(flight_plan_start_time[1]))
-    time.sleep(start_tid_epoch - time.time())
-else:
-    print("Sleeping only 10 seconds!")
-    time.sleep(10)
+def stop_server(app):
+	if not app.TDedicatedForm.has_focus():
+		app.TDedicatedForm.set_focus()
+	app.TDedicatedForm.STOP.wait("exists enabled visible ready",5,0.5)
+	app.TDedicatedForm.STOP.click()
+	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
+	app.Confirm.OK.click()
+	
+def close_server(app):
+	if not app.TDedicatedForm.has_focus():
+		app.TDedicatedForm.set_focus()
+	ds_app.TDedicatedForm.close_alt_f4()
+	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
+	ds_app.Confirm.OK.click()
 
-# Start flightplan, kl 19:30 søndager
-print("STARTButton->click")
-ds_app.TDedicatedForm.STARTButton.click()
-time.sleep(10)
+def server_messagehandler(app):
+	server_stop = False
+	i = 0
 
-# Start flight
-ds_app.TDedicatedForm.edit.send_keystrokes(".start")
-ds_app.TDedicatedForm.edit.send_keystrokes("{ENTER}")
+	while True:
+		if server_stop == True:
+			break
+		ds_log = ds_app.TDedicatedForm.TspSkinMemo.texts()
+		ds_log_list = ds_log[0].split("\r\n")
+		ds_log_list.pop()
 
+		if len(ds_log_list) > i :
+			for j in range(i, len(ds_log_list)):
+				if ds_log_list[j].startswith("Flight started."):
+					print("FLIGHT STARTED!")
+				if ds_log_list[j].startswith("Dedicated server restarting."):
+					print("STOPPING SERVER!")
+					server_stop = True
+					break
+			i = len(ds_log_list)
+		time.sleep(2)
+	return server_stop
 
-i = 0
-while True:
-    ds_log = ds_app.TDedicatedForm.TspSkinMemo.texts()
-    ds_log_list = ds_log[0].split("\r\n")
-    ds_log_list.pop()
+def shutdown_vm():
+	print("Shutting down in 10 seconds!")
+	#os.system("shutdown /s /t 10")
+
+if __name__ == "__main__":
+	
+	print("Sleeping 60 seconds before doing anything.")
+	time.sleep(60)
+
+	user_path = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
+	sfl_path = os.path.join(user_path,"flightplan.sfl")
+
+	set_ds_config(ds_base_path)
+	fpl_file_path = select_random_flightplan(fpl_files_folder)
+	set_flightplan_params(fpl_file_path)
+	
+	ds_app = open_server(ds_base_path)
+	
+	start_time(flight_plan_start_time)
+	start_server(ds_app)
+	start_flight(ds_app)
+
+	server_stop = False
+	server_stop = server_messagehandler(ds_app)
+
+	if server_stop:
+		stop_server(ds_app)
+		close_server(ds_app)
+		shutdown_vm()
+	exit()
     
-    if len(ds_log_list) > i :
-        for j in range(i, len(ds_log_list)):
-            if ds_log_list[j].startswith("Flight started."):
-                print("FLIGHT STARTED!")
-            if ds_log_list[j].startswith("Server: stop"):
-                print("STOPPING SERVER!")
-                #ds_app.TDedicatedForm.STOPButton.click()
-                #ds_app.Confirm.OK.click()
-                #ds_app.TDedicatedForm.close_alt_f4()
-                #ds_app.Confirm.OK.click()
-                #exit()
-        i = len(ds_log_list)
-    time.sleep(2)
-
-#os.system("shutdown /s /t 0")
-
 # #Listbox2 -> Server name
-# app.TDedicatedForm.Listbox2.item_texts()
+# ds_app.TDedicatedForm.Listbox2.item_texts()
+
 # #Listbox4 -> Server status
-# app.TDedicatedForm.Listbox4.item_texts()
+# ds_app.TDedicatedForm.Listbox4.item_texts()[0] - Status: server not running
+
+# ds_app.TDedicatedForm.Listbox4.item_texts()[0] - Status: joining enabled
+# ds_app.TDedicatedForm.Listbox4.item_texts()[1] - Time: HH:MM:SS
+# ds_app.TDedicatedForm.Listbox4.item_texts()[2] - Stop join in: HH:MM:SS
+
+# ds_app.TDedicatedForm.Listbox4.item_texts()[0] - Status: waiting for race start
+# ds_app.TDedicatedForm.Listbox4.item_texts()[1] - Time: HH:MM:SS
+# ds_app.TDedicatedForm.Listbox4.item_texts()[2] - Race starts in: HH:MM:SS
+
+# ds_app.TDedicatedForm.Listbox4.item_texts()[0] - Status: race in progress
+# ds_app.TDedicatedForm.Listbox4.item_texts()[1] - Time: HH:MM:SS
+# ds_app.TDedicatedForm.Listbox4.item_texts()[2] - DistanceFlown: 0.0km
+# ds_app.TDedicatedForm.Listbox4.item_texts()[3] - Leader:
+
+
 # #Listbox6 -> Flightplan list
 # app.TDedicatedForm.Listbox6.item_texts()
+
 # #Listbox8 -> PLayers connected list
 # app.TDedicatedForm.Listbox8.item_texts()
+
 # #TspSkinMemo -> Server log
 # app.TDedicatedForm.TspSkinMemo.texts()
 
@@ -141,3 +213,4 @@ while True:
 # #.ban	Player ID or Player CN	Kicks player and adds them to the ban list
 # #.stopjoin	No parameters | minutes | inf
 # #.start
+
