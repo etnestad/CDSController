@@ -13,24 +13,22 @@ ds_name = ""
 ds_port = ""
 ds_password = ""
 ds_admin_password = ""
-
-ds_base_path = "c:\\condor2\\"
-fpl_files_folder = "z:\\condor\\"
+ds_base_path = ""
+fpl_files_folder = ""
 
 flight_plan_start_time = [19,30]
-join_time_limit = "45" # Minutter
-
-# Task parameters
-task_start_time = [14,00]   
-task_start_date = [2019,6,21]
-task_start_delay = 5
+join_time_limit = "45" #  20:15
+task_start_delay = 5   #  20:20
 
 def open_server(ds_base_path):
+	print(sys._getframe().f_code.co_name + " - ", end = '')
 	ds_app_path = os.path.join(ds_base_path,"condordedicated.exe")
 	ds_app = Application().start(ds_app_path)
+	print("done!")
 	return ds_app
 
-def set_ds_config(ds_base_path):	
+def set_ds_config(ds_base_path):
+	print(sys._getframe().f_code.co_name + " - ", end = '')
 	ds_config_path = os.path.join(ds_base_path,"settings\\host.ini")
 	ds_config = configparser.ConfigParser()
 	ds_config_file = open(ds_config_path,"w")
@@ -54,8 +52,10 @@ def set_ds_config(ds_base_path):
 	ds_config.set("DedicatedServer","LastSFL",sfl_path)
 	ds_config.write(ds_config_file)
 	ds_config_file.close()
+	print("done!")
 
 def select_random_flightplan(fpl_files_folder):
+	print(sys._getframe().f_code.co_name + " - ", end = '')
 	# Select random flightplan from fpl_files_folder
 	fpl_files = [x for x in os.listdir(fpl_files_folder) if x.endswith(".fpl")]
 	fpl_file = random.choice(fpl_files)
@@ -65,11 +65,15 @@ def select_random_flightplan(fpl_files_folder):
 	sfl_file = open(sfl_path,"w")
 	sfl_file.write(fpl_file_path + "\r\n")
 	sfl_file.close()
-	print("Flightplan: " + fpl_file_path)
+	print("done!")
 	return fpl_file_path
 	
 def set_flightplan_params(fpl_file_path):
+	print(sys._getframe().f_code.co_name + " - ", end = '')
 	# Force Some parameters in flightplan
+	task_start_time = [14,00]
+	task_start_date = [2019,6,21]
+	
 	flight_plan = configparser.ConfigParser()
 	flight_plan.read(fpl_file_path)
 	flight_plan['GameOptions']['StartTime'] = str(task_start_time[0]+task_start_time[1]/60.0)
@@ -78,6 +82,7 @@ def set_flightplan_params(fpl_file_path):
 	tmp_file = open(fpl_file_path,"w")
 	flight_plan.write(tmp_file)
 	tmp_file.close()
+	print("done!")
 
 def start_time(flight_plan_start_time):
 	start_tid = list(time.localtime())
@@ -93,33 +98,41 @@ def start_time(flight_plan_start_time):
 		time.sleep(10)
 
 def start_server(app):
+	print(sys._getframe().f_code.co_name + " - ", end = '')
 	if not app.TDedicatedForm.has_focus():
 		app.TDedicatedForm.set_focus()
 	app.TDedicatedForm.START.wait("exists enabled visible ready",5,0.5)
 	ds_app.TDedicatedForm.START.click()
+	print("done!")
 
 def start_flight(app):
+	print(sys._getframe().f_code.co_name + " - ", end = '')
 	if not app.TDedicatedForm.has_focus():
 		app.TDedicatedForm.set_focus()
 	app.TDedicatedForm.edit.wait("exists enabled visible ready",5,0.5)
 	app.TDedicatedForm.edit.send_keystrokes(".start")
 	app.TDedicatedForm.edit.send_keystrokes("{ENTER}")
 	# Responsen til denne er "Flight started." i Server log
+	print("done!")
 
 def stop_server(app):
+	print(sys._getframe().f_code.co_name + " - ", end = '')
 	if not app.TDedicatedForm.has_focus():
 		app.TDedicatedForm.set_focus()
 	app.TDedicatedForm.STOP.wait("exists enabled visible ready",5,0.5)
 	app.TDedicatedForm.STOP.click()
 	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
 	app.Confirm.OK.click()
+	print("done!")
 	
 def close_server(app):
+	print(sys._getframe().f_code.co_name + " - ", end = '')
 	if not app.TDedicatedForm.has_focus():
 		app.TDedicatedForm.set_focus()
 	ds_app.TDedicatedForm.close_alt_f4()
 	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
 	ds_app.Confirm.OK.click()
+	print("done!")
 
 def server_messagehandler(app):
 	server_stop = False
@@ -148,11 +161,33 @@ def shutdown_vm():
 	print("Shutting down in 10 seconds!")
 	#os.system("shutdown /s /t 10")
 
+def read_inifile():
+	print(sys._getframe().f_code.co_name + " - ", end = '')
+	global ds_name
+	global ds_port
+	global ds_password
+	global ds_admin_password
+	global ds_base_path
+	global fpl_files_folder
+	
+	config = configparser.ConfigParser()
+	config.read("dscontrol.ini")
+	
+	ds_name = stuff['general']['servername']
+	ds_port = stuff['general']['Port']
+	ds_password = stuff['general']['Password']
+	ds_admin_password = stuff['general']['AdminPassword']
+	ds_base_path = stuff['general']['ServerBasePath']
+	fpl_files_folder = stuff['general']['FlightPlansBasePath']
+	print("done!")
+
 if __name__ == "__main__":
 	
 	print("Sleeping 60 seconds before doing anything.")
-	time.sleep(60)
-
+	#time.sleep(60)
+	
+	read_inifile()
+	
 	user_path = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
 	sfl_path = os.path.join(user_path,"flightplan.sfl")
 
