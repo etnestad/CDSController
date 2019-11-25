@@ -102,7 +102,7 @@ def start_server(app):
 	if not app.TDedicatedForm.has_focus():
 		app.TDedicatedForm.set_focus()
 	app.TDedicatedForm.START.wait("exists enabled visible ready",5,0.5)
-	ds_app.TDedicatedForm.START.click()
+	app.TDedicatedForm.START.click()
 	print("done!")
 
 def start_flight(app):
@@ -129,9 +129,9 @@ def close_server(app):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
 	if not app.TDedicatedForm.has_focus():
 		app.TDedicatedForm.set_focus()
-	ds_app.TDedicatedForm.close_alt_f4()
+	app.TDedicatedForm.close_alt_f4()
 	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
-	ds_app.Confirm.OK.click()
+	app.Confirm.OK.click()
 	print("done!")
 
 def server_messagehandler(app):
