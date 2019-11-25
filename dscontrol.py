@@ -20,6 +20,10 @@ flight_plan_start_time = [19,30]
 join_time_limit = "45" #  20:15
 task_start_delay = 5   #  20:20
 
+def exceptionhandler(type, value, traceback, oldhook=sys.excepthook):
+	oldhook(type, value, traceback)
+	input("Press return.")
+
 def open_server(ds_base_path):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
 	ds_app_path = os.path.join(ds_base_path,"condordedicated.exe")
@@ -60,7 +64,7 @@ def select_random_flightplan(fpl_files_folder):
 	fpl_files = [x for x in os.listdir(fpl_files_folder) if x.endswith(".fpl")]
 	fpl_file = random.choice(fpl_files)
 	fpl_file_path = os.path.join(fpl_files_folder,fpl_file)
-		
+	
 	# Write flightplan to SFL
 	sfl_file = open(sfl_path,"w")
 	sfl_file.write(fpl_file_path + "\r\n")
@@ -98,17 +102,13 @@ def start_time(flight_plan_start_time):
 		time.sleep(10)
 
 def start_server(app):
-	print(sys._getframe().f_code.co_name + " - ", end = '')
-	if not app.TDedicatedForm.has_focus():
-		app.TDedicatedForm.set_focus()
+	print(sys._getframe().f_code.co_name + " - ", end = '')	
 	app.TDedicatedForm.START.wait("exists enabled visible ready",5,0.5)
 	app.TDedicatedForm.START.click()
 	print("done!")
 
 def start_flight(app):
-	print(sys._getframe().f_code.co_name + " - ", end = '')
-	if not app.TDedicatedForm.has_focus():
-		app.TDedicatedForm.set_focus()
+	print(sys._getframe().f_code.co_name + " - ", end = '')	
 	app.TDedicatedForm.edit.wait("exists enabled visible ready",5,0.5)
 	app.TDedicatedForm.edit.send_keystrokes(".start")
 	app.TDedicatedForm.edit.send_keystrokes("{ENTER}")
@@ -117,8 +117,6 @@ def start_flight(app):
 
 def stop_server(app):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
-	if not app.TDedicatedForm.has_focus():
-		app.TDedicatedForm.set_focus()
 	app.TDedicatedForm.STOP.wait("exists enabled visible ready",5,0.5)
 	app.TDedicatedForm.STOP.click()
 	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
@@ -127,8 +125,6 @@ def stop_server(app):
 	
 def close_server(app):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
-	if not app.TDedicatedForm.has_focus():
-		app.TDedicatedForm.set_focus()
 	app.TDedicatedForm.close_alt_f4()
 	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
 	app.Confirm.OK.click()
@@ -173,16 +169,17 @@ def read_inifile():
 	config = configparser.ConfigParser()
 	config.read("dscontrol.ini")
 	
-	ds_name = stuff['general']['servername']
-	ds_port = stuff['general']['Port']
-	ds_password = stuff['general']['Password']
-	ds_admin_password = stuff['general']['AdminPassword']
-	ds_base_path = stuff['general']['ServerBasePath']
-	fpl_files_folder = stuff['general']['FlightPlansBasePath']
+	ds_name = config['general']['servername']
+	ds_port = config['general']['Port']
+	ds_password = config['general']['Password']
+	ds_admin_password = config['general']['AdminPassword']
+	ds_base_path = config['general']['ServerBasePath']
+	fpl_files_folder = config['general']['FlightPlansBasePath']
 	print("done!")
 
 if __name__ == "__main__":
 	
+	sys.excepthook = exceptionhandler
 	print("Sleeping 60 seconds before doing anything.")
 	#time.sleep(60)
 	
