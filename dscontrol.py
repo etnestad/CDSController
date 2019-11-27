@@ -6,8 +6,9 @@ import sched
 import configparser
 import getpass
 from pywinauto import Application
-from datetime import date,timedelta
+from datetime import date,timedelta,datetime
 from win32com.shell import shell, shellcon
+from shutil import copyfile
 
 ds_name = ""
 ds_port = ""
@@ -155,7 +156,7 @@ def server_messagehandler(app):
 
 def shutdown_vm():
 	print("Shutting down in 10 seconds!")
-	#os.system("shutdown /s /t 10")
+	os.system("shutdown /s /t 10")
 
 def read_inifile():
 	print(sys._getframe().f_code.co_name + " - ", end = '')
@@ -177,16 +178,29 @@ def read_inifile():
 	fpl_files_folder = config['general']['FlightPlansBasePath']
 	print("done!")
 
+def find_result_file(date_string):
+	user_path = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
+	result_folder_path = os.path.join(user_path,"condor\\raceresults")
+	
+	for root, dirs, files in os.walk(result_folder_path):
+		for name in files:
+			if date_string + ".csv" in name:
+				return os.path.join(root,name)
+	return None
+
 if __name__ == "__main__":
 	
 	sys.excepthook = exceptionhandler
+	
 	print("Sleeping 60 seconds before doing anything.")
-	#time.sleep(60)
+	time.sleep(60)
 	
 	read_inifile()
 	
 	user_path = shell.SHGetFolderPath(0, shellcon.CSIDL_PERSONAL, None, 0)
 	sfl_path = os.path.join(user_path,"flightplan.sfl")
+
+	date_string = datetime.now().strftime("%Y.%m.%d")
 
 	set_ds_config(ds_base_path)
 	fpl_file_path = select_random_flightplan(fpl_files_folder)
@@ -204,6 +218,9 @@ if __name__ == "__main__":
 	if server_stop:
 		stop_server(ds_app)
 		close_server(ds_app)
+		result_file = find_result_file(date_string)
+		if result_file != None:
+			copyfile(result_file,fpl_files_folder)
 		shutdown_vm()
 	exit()
     
