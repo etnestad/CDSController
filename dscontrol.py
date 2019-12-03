@@ -10,6 +10,8 @@ from datetime import date,timedelta,datetime
 from win32com.shell import shell, shellcon
 from shutil import copyfile
 
+test_run = 0
+
 ds_name = ""
 ds_port = ""
 ds_password = ""
@@ -34,6 +36,7 @@ def open_server(ds_base_path):
 
 def set_ds_config(ds_base_path):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
+	global test_run
 	ds_config_path = os.path.join(ds_base_path,"settings\\host.ini")
 	ds_config = configparser.ConfigParser()
 	ds_config_file = open(ds_config_path,"w")
@@ -48,7 +51,10 @@ def set_ds_config(ds_base_path):
 	ds_config.set("General","MinPlayers","1")
 	ds_config.set("General","MaxPing","40")
 	ds_config.set("General","JoinTimeLimit",join_time_limit)
-	ds_config.set("General","AdvertiseOnWeb","1")
+	if test_run == 0:
+		ds_config.set("General","AdvertiseOnWeb","1")
+	else:
+		ds_config.set("General","AdvertiseOnWeb","0")
 	ds_config.set("General","AdvertiseManualIP","")
 	ds_config.set("General","AutomaticPortForwarding","0")
 	ds_config.set("General","AllowClientsToSaveFlightPlan","1")
@@ -90,12 +96,15 @@ def set_flightplan_params(fpl_file_path):
 	print("done!")
 
 def start_time(flight_plan_start_time):
+	global test_run
 	start_tid = list(time.localtime())
 	start_tid[3] = flight_plan_start_time[0]
 	start_tid[4] = flight_plan_start_time[1]
 	start_tid[5] = 0  # Sekunder
 	start_tid_epoch = time.mktime(tuple(start_tid))
-	if start_tid_epoch > time.time():
+	if test_run != 0:
+		return
+	elif start_tid_epoch > time.time():
 		print("Sleep for start time: " + str(flight_plan_start_time[0]) + ":" + str(flight_plan_start_time[1]))
 		time.sleep(start_tid_epoch - time.time())
 	else:
@@ -105,14 +114,19 @@ def start_time(flight_plan_start_time):
 def start_server(app):
 	print(sys._getframe().f_code.co_name + " - ", end = '')	
 	app.TDedicatedForm.START.wait("exists enabled visible ready",5,0.5)
-	app.TDedicatedForm.START.click()
+	while not app.TDedicatedForm.STOP.exists(timeout=0.5):
+		app.TDedicatedForm.START.click()
+	while "joining enabled" not in ds_app.TDedicatedForm.Listbox4.item_texts()[0]:
+		time.sleep(0.5)
 	print("done!")
 
 def start_flight(app):
-	print(sys._getframe().f_code.co_name + " - ", end = '')	
-	app.TDedicatedForm.edit.wait("exists enabled visible ready",5,0.5)
-	app.TDedicatedForm.edit.send_keystrokes(".start")
-	app.TDedicatedForm.edit.send_keystrokes("{ENTER}")
+	print(sys._getframe().f_code.co_name + " - ", end = '')
+	while "Flight started." not in str(app.TDedicatedForm.TspSkinMemo.texts()):
+		app.TDedicatedForm.edit.wait("exists enabled visible ready",5,0.5)
+		app.TDedicatedForm.edit.send_keystrokes(".start")
+		app.TDedicatedForm.edit.send_keystrokes("{ENTER}")
+		time.sleep(1)
 	# Responsen til denne er "Flight started." i Server log
 	print("done!")
 
@@ -155,6 +169,9 @@ def server_messagehandler(app):
 	return server_stop
 
 def shutdown_vm():
+	global test_run
+	if test_run == 1:
+		return
 	print("Shutting down in 10 seconds!")
 	os.system("shutdown /s /t 10")
 
@@ -192,8 +209,12 @@ if __name__ == "__main__":
 	
 	sys.excepthook = exceptionhandler
 	
-	print("Sleeping 60 seconds before doing anything.")
-	time.sleep(60)
+	if len(sys.argv) == 2 and sys.argv[1] == "test":
+		print("TEST RUN!")
+		test_run = 1
+	else:
+		print("Sleeping 60 seconds before doing anything.")
+		time.sleep(60)
 	
 	read_inifile()
 	
