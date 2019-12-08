@@ -8,7 +8,7 @@ import getpass
 from pywinauto import Application
 from datetime import date,timedelta,datetime
 from win32com.shell import shell, shellcon
-from shutil import copyfile
+import shutil 
 
 test_run = 0
 
@@ -241,7 +241,7 @@ if __name__ == "__main__":
 		close_server(ds_app)
 		result_file = find_result_file(date_string)
 		if result_file != None:
-			copyfile(result_file,fpl_files_folder)
+			shutil.copy(result_file,fpl_files_folder)
 		shutdown_vm()
 	exit()
     
