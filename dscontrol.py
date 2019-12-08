@@ -5,10 +5,12 @@ import random
 import sched
 import configparser
 import getpass
+import shutil
 from pywinauto import Application
 from datetime import date,timedelta,datetime
 from win32com.shell import shell, shellcon
-import shutil 
+from PIL import Image,ImageDraw,ImageFont
+
 
 test_run = 0
 
@@ -205,10 +207,75 @@ def find_result_file(date_string):
 				return os.path.join(root,name)
 	return None
 
+def make_result_png(result_file):
+	global fpl_files_folder
+	# Load result file
+	linelist = [line.rstrip('\n') for line in open(result_file)]
+	
+	# Remove duplicates
+	for idx, line1 in enumerate(linelist):
+		index = idx
+		name = line1.split(',')[2]        
+		for idy, line2 in enumerate(linelist[idx+1:]):
+			if name == line2.split(',')[2]:                        
+				linelist.pop(idy+idx+1)
+	
+	if os.name == "posix":
+		font = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf",15)
+		fontbold = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSansBold.ttf",15)
+	else:
+		font = ImageFont.truetype("arial.ttf",15)
+		fontbold = ImageFont.truetype("arialbd.ttf",15)
+	
+	img = Image.new('RGB',(700,100),(255,255,255))
+	d = ImageDraw.Draw(img)
+	
+	max_x_sizes = [0] * 11
+	max_y_size = 0
+	x_spacing = 10
+	columns = [0,1,2,5,6,7,8,9,10]
+	
+	# Find sizes
+	i = 0
+	while i < len(linelist):
+		line = linelist[i].split(',')
+		
+		for col in columns:
+			if font.getsize(line[col])[0] > max_x_sizes[col]:
+				max_x_sizes[col] = font.getsize(line[col])[0]
+			if font.getsize(line[col])[1] > max_y_size:
+				max_y_size = font.getsize(line[col])[1]
+		i = i+1
+	
+	img_x_size = sum(max_x_sizes) + x_spacing * (len(columns)-1)
+	img_y_size = len(linelist)*max_y_size
+	img = Image.new('RGB',(img_x_size,img_y_size),(255,255,255))
+	d = ImageDraw.Draw(img)
+	
+	i = 0
+	while i < len(linelist):
+		line = linelist[i].split(',')
+		row = max_y_size*i
+		
+		for idx, col in enumerate(columns):
+			if i == 0:
+				d.text((sum(max_x_sizes[0:col])+x_spacing*idx,row), line[col], fill="black", font=fontbold)
+			elif idx == 0:
+				d.text((sum(max_x_sizes[0:col])+x_spacing*idx,row), str(i), fill="black", font=font)
+			elif idx == 2:
+				# Remove dot in names
+				player = ' '.join([str(elem) for elem in line[col].split('.')])
+				d.text((sum(max_x_sizes[0:col])+x_spacing*idx,row), player, fill="black", font=font)
+			else:
+				d.text((sum(max_x_sizes[0:col])+x_spacing*idx,row), line[col], fill="black", font=font)
+		i = i+1
+	base_name = os.path.basename(result_file)	
+	img.save(os.path.join(fpl_files_folder,base_name.replace(".csv",".png")))
+
 if __name__ == "__main__":
 	
 	sys.excepthook = exceptionhandler
-	
+		
 	if len(sys.argv) == 2 and sys.argv[1] == "test":
 		print("TEST RUN!")
 		test_run = 1
@@ -222,7 +289,7 @@ if __name__ == "__main__":
 	sfl_path = os.path.join(user_path,"flightplan.sfl")
 
 	date_string = datetime.now().strftime("%Y.%m.%d")
-
+	
 	set_ds_config(ds_base_path)
 	fpl_file_path = select_random_flightplan(fpl_files_folder)
 	set_flightplan_params(fpl_file_path)
@@ -242,6 +309,7 @@ if __name__ == "__main__":
 		result_file = find_result_file(date_string)
 		if result_file != None:
 			shutil.copy(result_file,fpl_files_folder)
+			make_result_png(result_file)
 		shutdown_vm()
 	exit()
     
