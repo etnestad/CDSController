@@ -116,8 +116,11 @@ def start_time(flight_plan_start_time):
 def start_server(app):
 	print(sys._getframe().f_code.co_name + " - ", end = '')	
 	app.TDedicatedForm.START.wait("exists enabled visible ready",5,0.5)
-	while not app.TDedicatedForm.STOP.exists(timeout=0.5):
-		app.TDedicatedForm.START.click()
+	while not app.TDedicatedForm.STOP.exists(timeout=1):
+		try:
+			app.TDedicatedForm.START.click()
+		except:
+			pass
 	while "joining enabled" not in ds_app.TDedicatedForm.Listbox4.item_texts()[0]:
 		time.sleep(0.5)
 	print("done!")
