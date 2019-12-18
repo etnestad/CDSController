@@ -216,12 +216,14 @@ def make_result_png(result_file):
 	linelist = [line.rstrip('\n') for line in open(result_file)]
 	
 	# Remove duplicates
-	for idx, line1 in enumerate(linelist):
-		index = idx
-		name = line1.split(',')[2]        
-		for idy, line2 in enumerate(linelist[idx+1:]):
-			if name == line2.split(',')[2]:                        
-				linelist.pop(idy+idx+1)
+	final_list = []
+	name_list = []
+	for line in linelist:
+		name = line.split(',')[2]
+		if name not in name_list:
+			name_list.append(name)
+			final_list.append(line)
+	linelist = final_list
 	
 	if os.name == "posix":
 		font = ImageFont.truetype("/usr/share/fonts/truetype/freefont/FreeSans.ttf",15)
