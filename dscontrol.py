@@ -145,12 +145,14 @@ def stop_server(app):
 	
 def close_server(app):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
-	app.TDedicatedForm.close_alt_f4()
-	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
-	app.Confirm.OK.click()
+	# app.TDedicatedForm.close_alt_f4()
+	# app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
+	# app.Confirm.OK.click()
+	app.kill()
 	print("done!")
 
 def server_messagehandler(app):
+	global test_run
 	server_stop = False
 	i = 0
 
@@ -170,7 +172,11 @@ def server_messagehandler(app):
 					server_stop = True
 					break
 			i = len(ds_log_list)
-		time.sleep(2)
+		if test_run == 0:
+			time.sleep(2)			
+		else:
+			time.sleep(10)
+			server_stop = True
 	return server_stop
 
 def shutdown_vm():
