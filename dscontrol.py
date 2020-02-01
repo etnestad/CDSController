@@ -179,13 +179,6 @@ def server_messagehandler(app):
 			server_stop = True
 	return server_stop
 
-def shutdown_vm():
-	global test_run
-	if test_run == 1:
-		return
-	print("Shutting down in 10 seconds!")
-	os.system("shutdown /s /t 10")
-
 def read_inifile():
 	print(sys._getframe().f_code.co_name + " - ", end = '')
 	global ds_name
@@ -318,7 +311,6 @@ if __name__ == "__main__":
 		if result_file != None:
 			shutil.copy(result_file,fpl_files_folder)
 			make_result_png(result_file)
-		shutdown_vm()
 	exit()
     
 # #Listbox2 -> Server name
