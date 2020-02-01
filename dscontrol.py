@@ -290,9 +290,6 @@ if __name__ == "__main__":
 	if len(sys.argv) == 2 and sys.argv[1] == "test":
 		print("TEST RUN!")
 		test_run = 1
-	else:
-		print("Sleeping 60 seconds before doing anything.")
-		time.sleep(60)
 	
 	read_inifile()
 	
