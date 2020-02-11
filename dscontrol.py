@@ -25,10 +25,6 @@ flight_plan_start_time = [19,30]
 join_time_limit = "45" #  20:15
 task_start_delay = 5   #  20:20
 
-def exceptionhandler(type, value, traceback, oldhook=sys.excepthook):
-	oldhook(type, value, traceback)
-	input("Press return.")
-
 def open_server(ds_base_path):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
 	ds_app_path = os.path.join(ds_base_path,"condordedicated.exe")
@@ -277,8 +273,6 @@ def make_result_png(result_file):
 	img.save(os.path.join(fpl_files_folder,base_name.replace(".csv",".png")))
 
 if __name__ == "__main__":
-	
-	sys.excepthook = exceptionhandler
 		
 	if len(sys.argv) == 2 and sys.argv[1] == "test":
 		print("TEST RUN!")
