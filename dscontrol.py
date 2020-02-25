@@ -34,6 +34,7 @@ class DedicatedServer:
 	# Users home folder
 	user_path = "" # Path to Documents folder
 	result_folder_path = ""
+	result_file = ""
 	sfl_path = ""
 	
 	# Date of today.
@@ -61,7 +62,7 @@ class DedicatedServer:
 		print("done!")
 	
 	def __set_ds_config(self):
-		print("Write host.ini - ", end= '')
+		print("Writing host.ini - ", end= '')
 		ds_config_path = os.path.join(self.ds_base_path,"settings\\host.ini")
 		ds_config = configparser.ConfigParser()
 		ds_config_file = open(ds_config_path,"w")
@@ -104,10 +105,13 @@ class DedicatedServer:
 		print("* Flightplan = " + self.fpl_file_path)
 		
 	def set_flightplan_params(self):
-		print("Set flightplan params - ", end = '')
+		print("Setting flightplan params:")
 		# Force Some parameters in flightplan
 		task_start_time = [14,00]
 		task_start_date = [2019,6,21]
+		
+		print(f"* Sim.time: {task_start_time[0]:02}:{task_start_time[1]:02}")
+		print(f"* Sim.date: {task_start_date[0]}-{task_start_date[1]:02}-{task_start_date[2]:02}")
 		
 		flight_plan = configparser.ConfigParser()
 		flight_plan.read(self.fpl_file_path)
@@ -117,7 +121,6 @@ class DedicatedServer:
 		tmp_file = open(self.fpl_file_path,"w")
 		flight_plan.write(tmp_file)
 		tmp_file.close()
-		print("done!")
 	
 	def sleep_for_start_time(self):
 		start_tid = list(time.localtime())
@@ -223,10 +226,9 @@ class DedicatedServer:
 					return os.path.join(root,name)
 		return None
 	
-	def make_result_png(result_file):
-		global fpl_files_folder
+	def make_result_png(self):
 		# Load result file
-		linelist = [line.rstrip('\n') for line in open(result_file)]
+		linelist = [line.rstrip('\n') for line in open(self.result_file)]
 		
 		# Remove duplicates
 		final_list = []
@@ -287,20 +289,19 @@ class DedicatedServer:
 				else:
 					d.text((sum(max_x_sizes[0:col])+x_spacing*idx,row), line[col], fill="black", font=font)
 			i = i+1
-		base_name = os.path.basename(result_file)	
+		base_name = os.path.basename(self.result_file)	
 		img.save(os.path.join(fpl_files_folder,base_name.replace(".csv",".png")))
 
 if __name__ == "__main__":
-		
+	
+	test_run = 0
 	if len(sys.argv) == 2 and sys.argv[1] == "test":
-		print("TEST RUN!")
 		test_run = 1
-	else:
-		test_run = 0
 	
 	server = DedicatedServer(test_run)
 	
 	server.select_random_flightplan()
+	
 	server.set_flightplan_params()
 	
 	server.open_server()
@@ -312,14 +313,15 @@ if __name__ == "__main__":
 	server.start_flight()
 
 	server_stop = False
+	
 	server_stop = server.messagehandler_loop()
 
 	if server_stop:
 		server.stop_server()
 		server.close_server()
 		server.find_result_file()
-		if self.result_file != None:
-			shutil.copy(self.result_file,self.fpl_files_folder)
+		if server.result_file != None and test_run == 0:
+			shutil.copy(server.result_file,server.fpl_files_folder)
 			server.make_result_png()
 	exit()
     
