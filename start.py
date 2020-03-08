@@ -16,9 +16,9 @@ my_env['WINEDEBUG'] = "-all"
 xvfb = subprocess.Popen(["Xvfb",my_env['DISPLAY'],"-screen","0"," 1600x1200x24"],env=my_env)
 
 if test_run == 1:
-    wine = subprocess.Popen(["script","--return","--quiet","-c wine python 'c:\cdsc\dscontrol.py' test","/home/audun/logg"],env=my_env)
+    wine = subprocess.Popen(["script","--flush","--return","--quiet","-c wine python 'c:\cdsc\dscontrol.py' test","/home/audun/logg"],env=my_env)
 else:
-    wine = subprocess.Popen(["script","--return","--quiet","-c wine python 'c:\cdsc\dscontrol.py'","/home/audun/logg"],env=my_env)
+    wine = subprocess.Popen(["script","--flush","--return","--quiet","-c wine python 'c:\cdsc\dscontrol.py'","/home/audun/logg"],env=my_env)
 
 #x11vnc = subprocess.Popen(["x11vnc","-display",":1","-nopw","-quiet","-forever"])
 
