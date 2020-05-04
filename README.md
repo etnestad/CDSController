@@ -18,6 +18,9 @@ wine pip uninstall -y comtypes
 ```
 
 Install Condor:
-```
+```e
 wine <condorinstaller>
 ```  
+The scripts:
+start.py is run from shell, which in turn starts c:\cdsc\dscontrol.py inside wine.
+C:\cdsc folder should be a symbolic link to a folder containg the scripts.
