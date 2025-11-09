@@ -10,7 +10,7 @@ from pywinauto import Application
 from datetime import date,timedelta,datetime
 from win32com.shell import shell, shellcon
 from PIL import Image,ImageDraw,ImageFont
-
+import argparse
 
 test_run = 0
 
@@ -143,9 +143,9 @@ def start_flight(app,starttype):
 def stop_server(app):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
 	app.TDedicatedForm.STOP.wait("exists enabled visible ready",5,0.5)
-	app.TDedicatedForm.STOP.click()
+	app.TDedicatedForm.STOP.click_input()
 	app.Confirm.OK.wait("exists enabled visible ready",5,0.5)
-	app.Confirm.OK.click()
+	app.Confirm.OK.click_input()
 	print("done!")
 	
 def close_server(app):
@@ -282,8 +282,14 @@ def make_result_png(result_file):
 	img.save(os.path.join(fpl_files_folder,base_name.replace(".csv",".png")))
 
 if __name__ == "__main__":
-		
-	if len(sys.argv) == 2 and sys.argv[1] == "test":
+
+	parser = argparse.ArgumentParser()
+
+	parser.add_argument('--test',action='store_true',help='Quick test-run of server')
+
+	args = parser.parse_args()
+
+	if args.test:
 		print("TEST RUN!")
 		test_run = 1
 	
