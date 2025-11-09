@@ -28,7 +28,7 @@ task_start_delay = 5   #  20:20
 def open_server(ds_base_path):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
 	ds_app_path = os.path.join(ds_base_path,"condordedicated.exe")
-	ds_app = Application().start(ds_app_path)
+	ds_app = Application().start(ds_app_path,work_dir=ds_base_path)
 	print("done!")
 	return ds_app
 
@@ -93,6 +93,12 @@ def set_flightplan_params(fpl_file_path):
 	tmp_file.close()
 	print("done!")
 
+def get_starttype(fpl_file_path):
+	flight_plan = configparser.ConfigParser()
+	flight_plan.read(fpl_file_path)
+	starttype = int(flight_plan['GameOptions']['starttype'])
+	return starttype
+
 def start_time(flight_plan_start_time):
 	global test_run
 	start_tid = list(time.localtime())
@@ -114,21 +120,24 @@ def start_server(app):
 	app.TDedicatedForm.START.wait("exists enabled visible ready",5,0.5)
 	while not app.TDedicatedForm.STOP.exists(timeout=1):
 		try:
-			app.TDedicatedForm.START.click()
+			app.TDedicatedForm.START.click_input()
 		except:
 			pass
 	while "joining enabled" not in ds_app.TDedicatedForm.Listbox4.item_texts()[0]:
 		time.sleep(0.5)
 	print("done!")
 
-def start_flight(app):
+def start_flight(app,starttype):
 	print(sys._getframe().f_code.co_name + " - ", end = '')
-	while "Flight started." not in str(app.TDedicatedForm.TspSkinMemo.texts()):
-		app.TDedicatedForm.edit.wait("exists enabled visible ready",5,0.5)
-		app.TDedicatedForm.edit.send_keystrokes(".start")
-		app.TDedicatedForm.edit.send_keystrokes("{ENTER}")
-		time.sleep(1)
-	# Responsen til denne er "Flight started." i Server log
+	starttypes = ["Aerotow launching procedure started.","","Flight started."]
+	while starttypes[starttype] not in str(app.TDedicatedForm.TspSkinMemo.texts()):
+		try:
+			app.TDedicatedForm.edit.wait("exists enabled visible ready",5,0.5)
+			app.TDedicatedForm.edit.send_keystrokes(".start")
+			app.TDedicatedForm.edit.send_keystrokes("{ENTER}")
+			time.sleep(1)
+		except:
+			pass
 	print("done!")
 
 def stop_server(app):
@@ -293,7 +302,10 @@ if __name__ == "__main__":
 	
 	start_time(flight_plan_start_time)
 	start_server(ds_app)
-	start_flight(ds_app)
+
+	starttype = get_starttype(fpl_file_path)
+        
+	start_flight(ds_app,starttype)
 
 	server_stop = False
 	server_stop = server_messagehandler(ds_app)
