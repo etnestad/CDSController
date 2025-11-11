@@ -23,9 +23,11 @@ ds_control_cmd = "-c wine python '" + dscontrol_dir + "\\dscontrol.py' " + " ".j
 wine = subprocess.Popen(["script","--flush","--return","--quiet",ds_control_cmd,"/home/audun/logg"],env=my_env)
 
 if args.vnc:
-	x11vnc = subprocess.Popen(["x11vnc","-display",my_env['DISPLAY'],"-nopw","-quiet","-forever"],stderr=subprocess.DEVNULL,stdout=subprocess.DEVNULL)
+    x11vnc = subprocess.Popen(["x11vnc","-display",my_env['DISPLAY'],"-nopw","-quiet","-forever"],stderr=subprocess.DEVNULL,stdout=subprocess.DEVNULL)
 
 wine.wait()
+
 if args.vnc:
-	x11vnc.kill()
+    x11vnc.kill()
+    
 xvfb.kill()
